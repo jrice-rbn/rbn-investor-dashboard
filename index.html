@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>RBN — Investor Dashboard</title>
+<title>RBN — Financial Metrics</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
 <style>
 :root {
@@ -198,7 +198,7 @@ footer {
 <!-- PASSWORD GATE -->
 <div id="password-gate">
   <div class="lock-icon">&#128274;</div>
-  <h1>RBN Investor Dashboard</h1>
+  <h1>RBN Financial Metrics</h1>
   <p>Enter the access code to view this dashboard</p>
   <div class="pw-form">
     <input type="password" id="pw-input" placeholder="Access code" autofocus>
@@ -211,7 +211,7 @@ footer {
 <div id="dashboard">
 
 <nav>
-  <div class="logo">RBN <span>Dashboard</span></div>
+  <div class="logo">RBN <span>Financial Metrics</span></div>
   <div class="nav-links">
     <a href="#kpis">KPIs</a>
     <a href="#revenue">Revenue</a>
@@ -231,7 +231,7 @@ footer {
 
 <!-- HERO -->
 <div class="hero">
-  <h1>RBN Financial Dashboard</h1>
+  <h1>RBN Financial Metrics</h1>
   <p>Historical performance, current state, and forward-looking projections for the RBN real estate rewards platform.</p>
   <div class="hero-date">Data through Q4 2025 &middot; Confidential</div>
 </div>
@@ -256,7 +256,8 @@ footer {
     <div class="kpi-card"><div class="label">RBN Rewards Total Revenue</div><div class="value">$1.76M</div><div class="sub">Since Q4 2023 launch</div></div>
     <div class="kpi-card"><div class="label">RBN Rewards Closings</div><div class="value">137</div><div class="sub">In ~2 years of operation</div></div>
     <div class="kpi-card"><div class="label">RBN Rev / Closing</div><div class="value">$12,827</div><div class="sub">Higher than legacy program</div></div>
-    <div class="kpi-card"><div class="label">Cash on Hand</div><div class="value">$377K</div><div class="sub">Current quarter</div></div>
+    <div class="kpi-card"><div class="label">Operating Account</div><div class="value">$255K</div><div class="sub">Operating cash on hand</div></div>
+    <div class="kpi-card"><div class="label">Rewards Trust Account</div><div class="value">$595K</div><div class="sub">Held for reward point obligations</div></div>
   </div>
 </div>
 
@@ -509,6 +510,11 @@ footer {
     <h2>Program Comparison</h2>
     <span class="badge">Amex vs RBN</span>
   </div>
+  <div class="chart-card">
+    <h3>First 9 Quarters: Transaction Value Comparison</h3>
+    <div class="chart-sub">Amex MR Points (from Q3 2020) vs RBN Rewards (from Q4 2023) — same stage of program maturity</div>
+    <div class="chart-container"><canvas id="chartFirst9Txn"></canvas></div>
+  </div>
   <div class="chart-card" style="overflow-x:auto;">
     <h3>Amex MR Points vs RBN Rewards — Side by Side</h3>
     <div class="chart-sub">RBN Rewards delivers higher per-closing revenue on a platform RBN fully owns</div>
@@ -603,7 +609,7 @@ footer {
 </div><!-- /container -->
 
 <footer>
-  RBN Investor Dashboard &middot; Confidential &middot; Data through Q4 2025<br>
+  RBN Financial Metrics &middot; Confidential &middot; Data through Q4 2025<br>
   &copy; 2026 RBN. All rights reserved.
 </footer>
 
@@ -875,6 +881,19 @@ new Chart(document.getElementById('chartCash'), {
   type: 'line',
   data: { labels: projQ, datasets: [{ data: projCash, borderColor: navy, backgroundColor: 'rgba(27,42,74,0.08)', fill: true, tension: 0.3, pointRadius: 4, borderWidth: 2.5 }] },
   options: { responsive: true, plugins: { tooltip: tooltipMoney }, scales: { y: { ticks: { callback: v => '$' + (v/1000000).toFixed(1) + 'M' }}}}
+});
+
+// CHART: First 9 Quarters Txn Value Comparison (Amex from Q3 2020 vs RBN Rewards from Q4 2023)
+const first9Labels = ['Q1','Q2','Q3','Q4','Q5','Q6','Q7','Q8','Q9'];
+const amexFirst9Txn = [652000,871500,1765000,9382000,8361200,10663000,24576895,22465867,17829000];
+const rbnFirst9Txn = [550000,1263400,11343690,26771000,23873694,12520900,23558449,27628251,12658000];
+new Chart(document.getElementById('chartFirst9Txn'), {
+  type: 'bar',
+  data: { labels: first9Labels, datasets: [
+    { label: 'Amex MR Points (from Q3 2020)', data: amexFirst9Txn, backgroundColor: '#94A3B8', borderRadius: 3 },
+    { label: 'RBN Rewards (from Q4 2023)', data: rbnFirst9Txn, backgroundColor: navyLight, borderRadius: 3 }
+  ]},
+  options: { responsive: true, plugins: { legend: { display: true, position: 'bottom' }, tooltip: tooltipMoney }, scales: { y: { ticks: { callback: v => '$' + (v/1000000).toFixed(0) + 'M' }}}}
 });
 
 } // end initCharts
