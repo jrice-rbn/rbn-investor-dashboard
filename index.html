@@ -1,0 +1,883 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RBN — Investor Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<style>
+:root {
+  --navy: #1B2A4A;
+  --navy-light: #2E5090;
+  --navy-lighter: #3A6BC5;
+  --accent: #FF6B35;
+  --accent-light: #FF8F66;
+  --bg: #F4F6FA;
+  --card: #FFFFFF;
+  --text: #1B2A4A;
+  --text-muted: #6B7A94;
+  --border: #E2E8F0;
+  --green: #10B981;
+  --red: #EF4444;
+  --gold: #F59E0B;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.6;
+}
+
+/* === PASSWORD GATE === */
+#password-gate {
+  position: fixed; inset: 0; z-index: 9999;
+  background: var(--navy);
+  display: flex; align-items: center; justify-content: center;
+  flex-direction: column;
+}
+#password-gate.hidden { display: none; }
+#password-gate .lock-icon { font-size: 48px; margin-bottom: 24px; opacity: 0.9; }
+#password-gate h1 { color: white; font-size: 28px; margin-bottom: 8px; font-weight: 700; letter-spacing: -0.5px; }
+#password-gate p { color: rgba(255,255,255,0.6); margin-bottom: 32px; font-size: 14px; }
+#password-gate .pw-form { display: flex; gap: 12px; align-items: center; }
+#password-gate input {
+  padding: 12px 20px; font-size: 16px; border: 2px solid rgba(255,255,255,0.2);
+  border-radius: 8px; background: rgba(255,255,255,0.1); color: white;
+  outline: none; width: 260px; transition: border-color 0.2s;
+}
+#password-gate input::placeholder { color: rgba(255,255,255,0.4); }
+#password-gate input:focus { border-color: var(--accent); }
+#password-gate button {
+  padding: 12px 28px; font-size: 16px; font-weight: 600;
+  background: var(--accent); color: white; border: none; border-radius: 8px;
+  cursor: pointer; transition: background 0.2s;
+}
+#password-gate button:hover { background: var(--accent-light); }
+#password-gate .error { color: var(--red); margin-top: 12px; font-size: 14px; min-height: 20px; }
+
+/* === DASHBOARD === */
+#dashboard { display: none; }
+#dashboard.visible { display: block; }
+
+/* NAV */
+nav {
+  position: sticky; top: 0; z-index: 100;
+  background: var(--navy);
+  padding: 0 32px;
+  display: flex; align-items: center;
+  height: 60px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+}
+nav .logo { color: white; font-weight: 800; font-size: 20px; letter-spacing: -0.5px; margin-right: 40px; white-space: nowrap; }
+nav .logo span { color: var(--accent); }
+nav .nav-links { display: flex; gap: 4px; overflow-x: auto; flex: 1; }
+nav .nav-links a {
+  color: rgba(255,255,255,0.7); text-decoration: none; font-size: 13px; font-weight: 500;
+  padding: 8px 14px; border-radius: 6px; white-space: nowrap; transition: all 0.2s;
+}
+nav .nav-links a:hover, nav .nav-links a.active { color: white; background: rgba(255,255,255,0.1); }
+
+/* LAYOUT */
+.container { max-width: 1400px; margin: 0 auto; padding: 32px 24px; }
+.section { margin-bottom: 48px; scroll-margin-top: 80px; }
+.section-header {
+  display: flex; align-items: center; gap: 12px;
+  margin-bottom: 24px; padding-bottom: 12px;
+  border-bottom: 2px solid var(--navy);
+}
+.section-header h2 { font-size: 22px; font-weight: 700; color: var(--navy); }
+.section-header .badge {
+  font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 20px;
+  background: var(--navy); color: white; text-transform: uppercase; letter-spacing: 0.5px;
+}
+
+/* HERO BANNER */
+.hero {
+  background: linear-gradient(135deg, var(--navy) 0%, var(--navy-light) 100%);
+  border-radius: 16px; padding: 40px 48px; margin-bottom: 40px;
+  color: white; position: relative; overflow: hidden;
+}
+.hero::after {
+  content: ''; position: absolute; right: -60px; top: -60px;
+  width: 300px; height: 300px; border-radius: 50%;
+  background: rgba(255,255,255,0.03);
+}
+.hero h1 { font-size: 36px; font-weight: 800; letter-spacing: -1px; margin-bottom: 8px; }
+.hero p { font-size: 16px; opacity: 0.7; max-width: 600px; }
+.hero .hero-date { font-size: 13px; opacity: 0.5; margin-top: 12px; }
+
+/* KPI CARDS */
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px; margin-bottom: 32px;
+}
+.kpi-card {
+  background: var(--card); border-radius: 12px; padding: 24px;
+  border: 1px solid var(--border);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.kpi-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+.kpi-card .label { font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
+.kpi-card .value { font-size: 28px; font-weight: 800; color: var(--navy); letter-spacing: -1px; }
+.kpi-card .sub { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+.kpi-card.accent .value { color: var(--accent); }
+
+/* CHART CARDS */
+.chart-card {
+  background: var(--card); border-radius: 12px; padding: 28px;
+  border: 1px solid var(--border);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  margin-bottom: 24px;
+}
+.chart-card h3 { font-size: 16px; font-weight: 700; color: var(--navy); margin-bottom: 4px; }
+.chart-card .chart-sub { font-size: 13px; color: var(--text-muted); margin-bottom: 20px; }
+.chart-row { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+@media (max-width: 900px) { .chart-row { grid-template-columns: 1fr; } }
+.chart-container { position: relative; width: 100%; }
+
+/* TABLES */
+.data-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.data-table th {
+  background: var(--navy); color: white; padding: 12px 16px;
+  text-align: left; font-weight: 600; font-size: 12px;
+  text-transform: uppercase; letter-spacing: 0.5px;
+  position: sticky; top: 60px;
+}
+.data-table th:first-child { border-radius: 8px 0 0 0; }
+.data-table th:last-child { border-radius: 0 8px 0 0; }
+.data-table td { padding: 10px 16px; border-bottom: 1px solid var(--border); }
+.data-table tr:hover td { background: #F8FAFC; }
+.data-table .num { text-align: right; font-variant-numeric: tabular-nums; }
+.data-table .pos { color: var(--green); font-weight: 600; }
+.data-table .neg { color: var(--red); font-weight: 600; }
+.data-table .total-row td { font-weight: 700; background: #F0F4FA; border-top: 2px solid var(--navy); }
+
+/* CALLOUT */
+.callout {
+  background: #FFF7ED; border-left: 4px solid var(--accent);
+  border-radius: 0 8px 8px 0; padding: 16px 20px;
+  font-size: 14px; color: #92400E; margin-bottom: 24px;
+}
+.callout strong { color: #78350F; }
+
+/* NOTE BOX */
+.note-box {
+  background: #EFF6FF; border: 1px solid #BFDBFE; border-radius: 12px;
+  padding: 24px; margin-bottom: 24px;
+}
+.note-box h4 { color: var(--navy-light); margin-bottom: 12px; font-size: 15px; }
+.note-box p, .note-box li { font-size: 14px; color: #1E40AF; line-height: 1.8; }
+.note-box ul { padding-left: 20px; }
+
+/* COMPARISON TABLE */
+.comparison-table th.program { text-align: center; }
+.comparison-table td.highlight { background: #F0FDF4; font-weight: 600; }
+
+/* FOOTER */
+footer {
+  text-align: center; padding: 32px; color: var(--text-muted);
+  font-size: 13px; border-top: 1px solid var(--border); margin-top: 48px;
+}
+
+@media (max-width: 768px) {
+  .container { padding: 16px; }
+  .hero { padding: 24px; }
+  .hero h1 { font-size: 24px; }
+  .kpi-card .value { font-size: 22px; }
+  nav .nav-links { display: none; }
+}
+</style>
+</head>
+<body>
+
+<!-- PASSWORD GATE -->
+<div id="password-gate">
+  <div class="lock-icon">&#128274;</div>
+  <h1>RBN Investor Dashboard</h1>
+  <p>Enter the access code to view this dashboard</p>
+  <div class="pw-form">
+    <input type="password" id="pw-input" placeholder="Access code" autofocus>
+    <button onclick="checkPassword()">Enter</button>
+  </div>
+  <div class="error" id="pw-error"></div>
+</div>
+
+<!-- DASHBOARD -->
+<div id="dashboard">
+
+<nav>
+  <div class="logo">RBN <span>Dashboard</span></div>
+  <div class="nav-links">
+    <a href="#kpis">KPIs</a>
+    <a href="#revenue">Revenue</a>
+    <a href="#transactions">Transactions</a>
+    <a href="#closings">Closings</a>
+    <a href="#rbn-program">RBN Rewards</a>
+    <a href="#unit-economics">Unit Economics</a>
+    <a href="#annual">Annual</a>
+    <a href="#pl">P&L</a>
+    <a href="#marketing">Marketing</a>
+    <a href="#comparison">Comparison</a>
+    <a href="#projections">Projections</a>
+  </div>
+</nav>
+
+<div class="container">
+
+<!-- HERO -->
+<div class="hero">
+  <h1>RBN Financial Dashboard</h1>
+  <p>Historical performance, current state, and forward-looking projections for the RBN real estate rewards platform.</p>
+  <div class="hero-date">Data through Q4 2025 &middot; Confidential</div>
+</div>
+
+<!-- ==================== KPIs ==================== -->
+<div class="section" id="kpis">
+  <div class="section-header">
+    <h2>Key Performance Indicators</h2>
+    <span class="badge">Current State</span>
+  </div>
+  <div class="kpi-grid">
+    <div class="kpi-card"><div class="label">Cumulative Transaction Value</div><div class="value">$490.4M</div><div class="sub">All-time across both programs</div></div>
+    <div class="kpi-card"><div class="label">Cumulative Referral Revenue</div><div class="value">$6.34M</div><div class="sub">Total referral fees earned</div></div>
+    <div class="kpi-card"><div class="label">Total Closings</div><div class="value">537</div><div class="sub">All-time real estate transactions</div></div>
+    <div class="kpi-card"><div class="label">Blended Take Rate</div><div class="value">1.29%</div><div class="sub">Consistent across programs</div></div>
+    <div class="kpi-card"><div class="label">Avg Revenue / Closing</div><div class="value">$11,812</div><div class="sub">Blended all-time average</div></div>
+    <div class="kpi-card"><div class="label">RBN Rewards Connections</div><div class="value">140</div><div class="sub">Current program agent connections</div></div>
+  </div>
+  <div class="kpi-grid">
+    <div class="kpi-card accent"><div class="label">2025 Revenue (Full Referral Fees)</div><div class="value">$945.8K</div><div class="sub">4 quarters, RBN Rewards only</div></div>
+    <div class="kpi-card accent"><div class="label">2025 Closings</div><div class="value">69</div><div class="sub">Full year 2025</div></div>
+    <div class="kpi-card"><div class="label">RBN Rewards Total Revenue</div><div class="value">$1.76M</div><div class="sub">Since Q4 2023 launch</div></div>
+    <div class="kpi-card"><div class="label">RBN Rewards Closings</div><div class="value">137</div><div class="sub">In ~2 years of operation</div></div>
+    <div class="kpi-card"><div class="label">RBN Rev / Closing</div><div class="value">$12,827</div><div class="sub">Higher than legacy program</div></div>
+    <div class="kpi-card"><div class="label">Cash on Hand</div><div class="value">$377K</div><div class="sub">Current quarter</div></div>
+  </div>
+</div>
+
+<!-- ==================== REVENUE ==================== -->
+<div class="section" id="revenue">
+  <div class="section-header">
+    <h2>Revenue Growth</h2>
+    <span class="badge">Historical</span>
+  </div>
+  <div class="chart-row">
+    <div class="chart-card">
+      <h3>Quarterly Revenue — All Programs</h3>
+      <div class="chart-sub">Combined Amex MR Points + RBN Rewards (Q4 2019 – Q4 2025)</div>
+      <div class="chart-container"><canvas id="chartRevAll"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <h3>Quarterly Revenue — RBN Rewards Only</h3>
+      <div class="chart-sub">Current platform since Q4 2023 launch</div>
+      <div class="chart-container"><canvas id="chartRevRBN"></canvas></div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== TRANSACTIONS ==================== -->
+<div class="section" id="transactions">
+  <div class="section-header">
+    <h2>Transaction Volume</h2>
+    <span class="badge">Historical</span>
+  </div>
+  <div class="chart-row">
+    <div class="chart-card">
+      <h3>Quarterly Transaction Value</h3>
+      <div class="chart-sub">Total real estate transaction value facilitated</div>
+      <div class="chart-container"><canvas id="chartTxnQ"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <h3>Cumulative Transaction Value</h3>
+      <div class="chart-sub">Running total — $490M+ facilitated to date</div>
+      <div class="chart-container"><canvas id="chartTxnCum"></canvas></div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== CLOSINGS ==================== -->
+<div class="section" id="closings">
+  <div class="section-header">
+    <h2>Closings</h2>
+    <span class="badge">Historical</span>
+  </div>
+  <div class="chart-row">
+    <div class="chart-card">
+      <h3>Quarterly Closings</h3>
+      <div class="chart-sub">Number of completed real estate transactions per quarter</div>
+      <div class="chart-container"><canvas id="chartClosingsQ"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <h3>Cumulative Closings</h3>
+      <div class="chart-sub">537 total closings since inception</div>
+      <div class="chart-container"><canvas id="chartClosingsCum"></canvas></div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== RBN REWARDS PROGRAM ==================== -->
+<div class="section" id="rbn-program">
+  <div class="section-header">
+    <h2>RBN Rewards Program</h2>
+    <span class="badge">Current Platform</span>
+  </div>
+  <div class="callout">
+    <strong>Program Transition:</strong> RBN launched its proprietary Rewards program in Q4 2023, replacing the Amex MR Points partnership (which ended Q3 2024). The RBN Rewards platform gives RBN full control over the rewards experience and economics.
+  </div>
+  <div class="chart-card" style="overflow-x:auto;">
+    <h3>RBN Rewards — Quarterly Performance</h3>
+    <table class="data-table">
+      <thead><tr><th>Quarter</th><th class="num">Txn Value</th><th class="num">Revenue</th><th class="num">Closings</th><th class="num">Connections</th><th class="num">Mkt Spend</th><th class="num">Cost / Connection</th></tr></thead>
+      <tbody>
+        <tr><td>2023 Q4</td><td class="num">$550,000</td><td class="num">$6,875</td><td class="num">1</td><td class="num">—</td><td class="num">—</td><td class="num">—</td></tr>
+        <tr><td>2024 Q1</td><td class="num">$1,263,400</td><td class="num">$15,048</td><td class="num">3</td><td class="num">—</td><td class="num">—</td><td class="num">—</td></tr>
+        <tr><td>2024 Q2</td><td class="num">$11,343,690</td><td class="num">$149,836</td><td class="num">15</td><td class="num">—</td><td class="num">$2,925</td><td class="num">—</td></tr>
+        <tr><td>2024 Q3</td><td class="num">$26,771,000</td><td class="num">$332,488</td><td class="num">25</td><td class="num">5</td><td class="num">$21,907</td><td class="num">$4,381</td></tr>
+        <tr><td>2024 Q4</td><td class="num">$23,873,694</td><td class="num">$307,211</td><td class="num">24</td><td class="num">10</td><td class="num">$20,083</td><td class="num">$2,008</td></tr>
+        <tr><td>2025 Q1</td><td class="num">$12,520,900</td><td class="num">$172,811</td><td class="num">13</td><td class="num">47</td><td class="num">$80,818</td><td class="num">$1,720</td></tr>
+        <tr><td>2025 Q2</td><td class="num">$23,558,449</td><td class="num">$302,479</td><td class="num">26</td><td class="num">22</td><td class="num">$71,094</td><td class="num">$3,232</td></tr>
+        <tr><td>2025 Q3</td><td class="num">$27,628,251</td><td class="num">$321,202</td><td class="num">20</td><td class="num">36</td><td class="num">$71,359</td><td class="num">$1,982</td></tr>
+        <tr><td>2025 Q4</td><td class="num">$12,658,000</td><td class="num">$149,342</td><td class="num">10</td><td class="num">20</td><td class="num">$76,208</td><td class="num">$3,810</td></tr>
+        <tr class="total-row"><td>TOTAL</td><td class="num">$140,167,384</td><td class="num">$1,757,292</td><td class="num">137</td><td class="num">140</td><td class="num">$344,394</td><td class="num">$2,460 avg</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="chart-row">
+    <div class="chart-card">
+      <h3>RBN Rewards: Revenue vs Marketing Spend</h3>
+      <div class="chart-sub">Revenue consistently exceeds marketing investment</div>
+      <div class="chart-container"><canvas id="chartRBNRevMkt"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <h3>RBN Rewards: Closings & Connections</h3>
+      <div class="chart-sub">Agent connections feeding the closing pipeline</div>
+      <div class="chart-container"><canvas id="chartRBNCloseConn"></canvas></div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== UNIT ECONOMICS ==================== -->
+<div class="section" id="unit-economics">
+  <div class="section-header">
+    <h2>Unit Economics</h2>
+    <span class="badge">Metrics</span>
+  </div>
+  <div class="chart-card" style="overflow-x:auto;">
+    <h3>Unit Economics Snapshot</h3>
+    <table class="data-table">
+      <thead><tr><th>Metric</th><th>Value</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td>Average Transaction Value</td><td class="num">$950K</td><td>Historical ~$1M, trending down slightly</td></tr>
+        <tr><td>Effective Take Rate</td><td class="num">1.29%</td><td>Consistent across both programs</td></tr>
+        <tr><td>Revenue per Closing (Blended)</td><td class="num">$11,812</td><td>All-time average</td></tr>
+        <tr><td>RBN Rewards Rev / Closing</td><td class="num">$12,827</td><td>Higher than legacy Amex program</td></tr>
+        <tr><td>Cost per Connection (Latest)</td><td class="num">$3,810</td><td>Q4 2025 — trending from $4,381 in Q3 2024</td></tr>
+        <tr><td>Connection-to-Close Rate</td><td class="num">70%</td><td>Based on historical conversion data</td></tr>
+        <tr><td>Points Liability / Closing</td><td class="num">~$8,233</td><td>~2/3 of revenue allocated to rewards</td></tr>
+        <tr><td>Net Revenue / Closing</td><td class="num">~$4,117</td><td>After points liability (~1/3 retained)</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="chart-row">
+    <div class="chart-card">
+      <h3>Take Rate Trend</h3>
+      <div class="chart-sub">Blended effective take rate by quarter</div>
+      <div class="chart-container"><canvas id="chartTakeRate"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <h3>Revenue per Closing</h3>
+      <div class="chart-sub">Average referral revenue generated per closed transaction</div>
+      <div class="chart-container"><canvas id="chartRevPerClose"></canvas></div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== ANNUAL SUMMARY ==================== -->
+<div class="section" id="annual">
+  <div class="section-header">
+    <h2>Annual Summary</h2>
+    <span class="badge">Year-over-Year</span>
+  </div>
+  <div class="callout">
+    <strong>Context:</strong> 2024-2025 reflects the transition from Amex MR Points (ended Q3 2024) to RBN Rewards. Combined revenue declined as legacy pipeline wound down, but the new RBN Rewards platform is now fully operational and growing.
+  </div>
+  <div class="chart-card" style="overflow-x:auto;">
+    <table class="data-table">
+      <thead><tr><th>Year</th><th class="num">Txn Value</th><th class="num">Revenue</th><th class="num">Closings</th><th class="num">YoY Txn Growth</th><th class="num">YoY Rev Growth</th><th class="num">YoY Closing Growth</th></tr></thead>
+      <tbody>
+        <tr><td>2020</td><td class="num">$1,523,500</td><td class="num">$11,315</td><td class="num">4</td><td class="num">—</td><td class="num">—</td><td class="num">—</td></tr>
+        <tr><td>2021</td><td class="num">$30,171,200</td><td class="num">$359,390</td><td class="num">36</td><td class="num pos">+1,880%</td><td class="num pos">+3,076%</td><td class="num pos">+800%</td></tr>
+        <tr><td>2022</td><td class="num">$81,550,762</td><td class="num">$1,092,056</td><td class="num">104</td><td class="num pos">+170%</td><td class="num pos">+204%</td><td class="num pos">+189%</td></tr>
+        <tr><td>2023</td><td class="num">$191,268,363</td><td class="num">$2,504,733</td><td class="num">210</td><td class="num pos">+135%</td><td class="num pos">+129%</td><td class="num pos">+102%</td></tr>
+        <tr><td>2024</td><td class="num">$108,244,295</td><td class="num">$1,410,338</td><td class="num">113</td><td class="num neg">-43%</td><td class="num neg">-44%</td><td class="num neg">-46%</td></tr>
+        <tr><td>2025</td><td class="num">$76,365,600</td><td class="num">$945,834</td><td class="num">69</td><td class="num neg">-29%</td><td class="num neg">-33%</td><td class="num neg">-39%</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="chart-row">
+    <div class="chart-card">
+      <h3>Annual Revenue</h3>
+      <div class="chart-sub">Full referral fee revenue by year</div>
+      <div class="chart-container"><canvas id="chartAnnualRev"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <h3>Annual Transaction Value</h3>
+      <div class="chart-sub">Total transaction value facilitated per year</div>
+      <div class="chart-container"><canvas id="chartAnnualTxn"></canvas></div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== P&L ==================== -->
+<div class="section" id="pl">
+  <div class="section-header">
+    <h2>P&L Analysis — 2025</h2>
+    <span class="badge">Monthly</span>
+  </div>
+  <div class="callout">
+    <strong>Revenue Note:</strong> P&L revenue shown here is <em>recognized</em> revenue (net of rewards points liability). For investor purposes, the full referral fee is the relevant revenue figure — see the Revenue Note section below. Q1-Q3 are fully reconciled; Q4 is preliminary.
+  </div>
+  <div class="chart-row">
+    <div class="chart-card">
+      <h3>Monthly Revenue vs Expenses (2025)</h3>
+      <div class="chart-sub">Recognized revenue vs total operating expenses</div>
+      <div class="chart-container"><canvas id="chartPLMonthly"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <h3>Monthly Net Income (2025)</h3>
+      <div class="chart-sub">P&L bottom line by month</div>
+      <div class="chart-container"><canvas id="chartNetIncome"></canvas></div>
+    </div>
+  </div>
+  <div class="chart-row">
+    <div class="chart-card">
+      <h3>2025 Expense Breakdown</h3>
+      <div class="chart-sub">Jan – Nov 2025 operating expense allocation</div>
+      <div class="chart-container" style="max-width:400px;margin:0 auto;"><canvas id="chartExpPie"></canvas></div>
+    </div>
+    <div class="chart-card" style="overflow-x:auto;">
+      <h3>Monthly P&L Detail</h3>
+      <table class="data-table">
+        <thead><tr><th>Month</th><th class="num">Revenue</th><th class="num">Expenses</th><th class="num">Net Income</th></tr></thead>
+        <tbody>
+          <tr><td>Jan</td><td class="num">$24,073</td><td class="num">$154,226</td><td class="num neg">($126,776)</td></tr>
+          <tr><td>Feb</td><td class="num">$5,640</td><td class="num">$106,002</td><td class="num neg">($97,044)</td></tr>
+          <tr><td>Mar</td><td class="num">$18,522</td><td class="num">$101,828</td><td class="num neg">($79,520)</td></tr>
+          <tr><td>Apr</td><td class="num">$44,118</td><td class="num">$116,198</td><td class="num neg">($68,431)</td></tr>
+          <tr><td>May</td><td class="num">$33,368</td><td class="num">$88,858</td><td class="num neg">($51,799)</td></tr>
+          <tr><td>Jun</td><td class="num">$53,114</td><td class="num">$91,620</td><td class="num neg">($35,203)</td></tr>
+          <tr><td>Jul</td><td class="num">$32,029</td><td class="num">$152,945</td><td class="num neg">($117,453)</td></tr>
+          <tr><td>Aug</td><td class="num">$21,512</td><td class="num">$104,326</td><td class="num neg">($79,350)</td></tr>
+          <tr><td>Sep</td><td class="num">$58,759</td><td class="num">$97,194</td><td class="num neg">($35,161)</td></tr>
+          <tr><td>Oct</td><td class="num">$22,590</td><td class="num">$240,613</td><td class="num neg">($215,009)</td></tr>
+          <tr><td>Nov</td><td class="num">$20,941</td><td class="num">$90,740</td><td class="num neg">($67,254)</td></tr>
+          <tr class="total-row"><td>YTD Total</td><td class="num">$334,666</td><td class="num">$1,344,552</td><td class="num neg">($972,998)</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== MARKETING ==================== -->
+<div class="section" id="marketing">
+  <div class="section-header">
+    <h2>Marketing Efficiency</h2>
+    <span class="badge">ROI</span>
+  </div>
+  <div class="chart-row">
+    <div class="chart-card">
+      <h3>Cost per Connection Trend</h3>
+      <div class="chart-sub">Trending down as marketing programs mature</div>
+      <div class="chart-container"><canvas id="chartCPC"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <h3>Marketing Spend vs Revenue</h3>
+      <div class="chart-sub">Revenue generated significantly exceeds marketing investment</div>
+      <div class="chart-container"><canvas id="chartMktROI"></canvas></div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== COMPARISON ==================== -->
+<div class="section" id="comparison">
+  <div class="section-header">
+    <h2>Program Comparison</h2>
+    <span class="badge">Amex vs RBN</span>
+  </div>
+  <div class="chart-card" style="overflow-x:auto;">
+    <h3>Amex MR Points vs RBN Rewards — Side by Side</h3>
+    <div class="chart-sub">RBN Rewards delivers higher per-closing revenue on a platform RBN fully owns</div>
+    <table class="data-table comparison-table">
+      <thead><tr><th>Metric</th><th class="program">Amex MR Points<br><small>Q4 2019 – Q3 2024</small></th><th class="program">RBN Rewards<br><small>Q4 2023 – Q4 2025</small></th><th class="program">Combined</th></tr></thead>
+      <tbody>
+        <tr><td>Total Transaction Value</td><td class="num">$350,257,336</td><td class="num">$140,167,384</td><td class="num">$490,424,720</td></tr>
+        <tr><td>Total Revenue</td><td class="num">$4,585,874</td><td class="num">$1,757,292</td><td class="num">$6,343,166</td></tr>
+        <tr><td>Total Closings</td><td class="num">400</td><td class="num">137</td><td class="num">537</td></tr>
+        <tr><td>Avg Take Rate</td><td class="num">1.31%</td><td class="num">1.25%</td><td class="num">1.29%</td></tr>
+        <tr><td>Avg Revenue / Closing</td><td class="num">$11,465</td><td class="num highlight">$12,827</td><td class="num">$11,812</td></tr>
+        <tr><td>Program Duration</td><td class="num">~5 years</td><td class="num">~2 years</td><td class="num">~6 years</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ==================== PROJECTIONS ==================== -->
+<div class="section" id="projections">
+  <div class="section-header">
+    <h2>Forward Projections (2026–2028)</h2>
+    <span class="badge">Operating Model</span>
+  </div>
+  <div class="callout">
+    <strong>Assumptions:</strong> $10M raise in Q3 2026 &middot; 60% to marketing, 40% to team/ops &middot; $950K avg transaction value &middot; 1.3% take rate &middot; $12,350 revenue per closing &middot; 70% connection-to-close rate &middot; Revenue realization waterfall over 4 quarters.
+  </div>
+  <div class="chart-row">
+    <div class="chart-card">
+      <h3>Projected Quarterly Revenue</h3>
+      <div class="chart-sub">Scaling from ~$240K to ~$3.9M/quarter by 2028</div>
+      <div class="chart-container"><canvas id="chartProjRev"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <h3>Projected Closings</h3>
+      <div class="chart-sub">Growing from ~20 to ~318 closings/quarter</div>
+      <div class="chart-container"><canvas id="chartProjClosings"></canvas></div>
+    </div>
+  </div>
+  <div class="chart-row">
+    <div class="chart-card">
+      <h3>LTV/CAC Ratio Projection</h3>
+      <div class="chart-sub">Improving unit economics as marketing scales — crossing 3x by Q4 2027</div>
+      <div class="chart-container"><canvas id="chartLTVCAC"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <h3>Cash Position & Runway</h3>
+      <div class="chart-sub">Post-raise cash position through 2028 — reaching cash-flow positive by Q2 2028</div>
+      <div class="chart-container"><canvas id="chartCash"></canvas></div>
+    </div>
+  </div>
+  <div class="chart-card" style="overflow-x:auto;">
+    <h3>Operating Model Summary</h3>
+    <table class="data-table">
+      <thead><tr><th>Period</th><th>Phase</th><th class="num">Mkt Spend</th><th class="num">Connections</th><th class="num">Closings</th><th class="num">Revenue</th><th class="num">OpEx</th><th class="num">Op. Income</th><th class="num">LTV/CAC</th><th class="num">Ending Cash</th></tr></thead>
+      <tbody>
+        <tr><td>2026 Q1</td><td>Pre-Raise</td><td class="num">$75K</td><td class="num">31</td><td class="num">20</td><td class="num">$241K</td><td class="num">$461K</td><td class="num neg">($220K)</td><td class="num">3.2x</td><td class="num">$157K</td></tr>
+        <tr><td>2026 Q2</td><td>Pre-Raise</td><td class="num">$75K</td><td class="num">31</td><td class="num">19</td><td class="num">$239K</td><td class="num">$460K</td><td class="num neg">($220K)</td><td class="num">3.2x</td><td class="num neg">($63K)</td></tr>
+        <tr><td>2026 Q3</td><td>Raise</td><td class="num">$75K</td><td class="num">31</td><td class="num">20</td><td class="num">$251K</td><td class="num">$467K</td><td class="num neg">($216K)</td><td class="num">3.3x</td><td class="num">$9.7M</td></tr>
+        <tr><td>2026 Q4</td><td>Ramp-Up</td><td class="num">$150K</td><td class="num">66</td><td class="num">24</td><td class="num">$300K</td><td class="num">$596K</td><td class="num neg">($296K)</td><td class="num">2.0x</td><td class="num">$9.4M</td></tr>
+        <tr><td>2027 Q1</td><td>Ramp-Up</td><td class="num">$300K</td><td class="num">139</td><td class="num">37</td><td class="num">$452K</td><td class="num">$871K</td><td class="num neg">($418K)</td><td class="num">1.5x</td><td class="num">$9.0M</td></tr>
+        <tr><td>2027 Q2</td><td>Ramp-Up</td><td class="num">$500K</td><td class="num">243</td><td class="num">69</td><td class="num">$851K</td><td class="num">$1.4M</td><td class="num neg">($511K)</td><td class="num">1.7x</td><td class="num">$8.5M</td></tr>
+        <tr><td>2027 Q3</td><td>Ramp-Up</td><td class="num">$750K</td><td class="num">384</td><td class="num">126</td><td class="num">$1.6M</td><td class="num">$2.1M</td><td class="num neg">($554K)</td><td class="num">2.1x</td><td class="num">$7.9M</td></tr>
+        <tr><td>2027 Q4</td><td>Scaled</td><td class="num">$750K</td><td class="num">404</td><td class="num">196</td><td class="num">$2.4M</td><td class="num">$2.7M</td><td class="num neg">($295K)</td><td class="num">3.2x</td><td class="num">$7.6M</td></tr>
+        <tr><td>2028 Q1</td><td>Scaled</td><td class="num">$750K</td><td class="num">425</td><td class="num">256</td><td class="num">$3.2M</td><td class="num">$3.2M</td><td class="num neg">($83K)</td><td class="num">4.2x</td><td class="num">$7.6M</td></tr>
+        <tr><td>2028 Q2</td><td>Scaled</td><td class="num">$750K</td><td class="num">447</td><td class="num">287</td><td class="num">$3.5M</td><td class="num">$3.5M</td><td class="num pos">$9K</td><td class="num">4.7x</td><td class="num">$7.6M</td></tr>
+        <tr><td>2028 Q3</td><td>Scaled</td><td class="num">$750K</td><td class="num">471</td><td class="num">303</td><td class="num">$3.7M</td><td class="num">$3.7M</td><td class="num pos">$30K</td><td class="num">5.0x</td><td class="num">$7.6M</td></tr>
+        <tr><td>2028 Q4</td><td>Scaled</td><td class="num">$750K</td><td class="num">496</td><td class="num">318</td><td class="num">$3.9M</td><td class="num">$3.9M</td><td class="num pos">$51K</td><td class="num">5.2x</td><td class="num">$7.7M</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ==================== REVENUE NOTE ==================== -->
+<div class="section" id="rev-note">
+  <div class="section-header">
+    <h2>Revenue Recognition Note</h2>
+    <span class="badge">Accounting</span>
+  </div>
+  <div class="note-box">
+    <h4>Why P&L Revenue Differs from Full Referral Fees</h4>
+    <ul>
+      <li>The P&L shows <strong>recognized revenue</strong> (net of rewards points liability)</li>
+      <li>For investor purposes, the <strong>full referral fee</strong> is the relevant top-line revenue figure</li>
+      <li>~2/3 of each referral fee is held as reward points liability on the balance sheet</li>
+      <li>~1/3 of each referral fee is recognized as revenue in the period</li>
+    </ul>
+    <p style="margin-top:16px;"><strong>Example:</strong> On a $12,350 referral fee — Full fee (investor view): $12,350 | Points liability (~2/3): ~$8,233 | Recognized on P&L (~1/3): ~$4,117</p>
+    <p style="margin-top:12px;"><strong>2025 Comparison:</strong> P&L recognized revenue: $334,666 (Jan-Nov) vs. Full referral fees: $945,834 (full year)</p>
+  </div>
+</div>
+
+</div><!-- /container -->
+
+<footer>
+  RBN Investor Dashboard &middot; Confidential &middot; Data through Q4 2025<br>
+  &copy; 2026 RBN. All rights reserved.
+</footer>
+
+</div><!-- /dashboard -->
+
+<script>
+// ===== PASSWORD GATE =====
+const HASH = 'd5a984b520f898a6b3c01ba73072ffa3df114241d79bf3b6f9e5702519ca9710';
+
+async function sha256(message) {
+  const msgBuffer = new TextEncoder().encode(message);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+async function checkPassword() {
+  const input = document.getElementById('pw-input').value;
+  const hash = await sha256(input);
+  if (hash === HASH) {
+    sessionStorage.setItem('rbn_auth', 'true');
+    document.getElementById('password-gate').classList.add('hidden');
+    document.getElementById('dashboard').classList.add('visible');
+    initCharts();
+  } else {
+    document.getElementById('pw-error').textContent = 'Incorrect access code. Please try again.';
+    document.getElementById('pw-input').value = '';
+    document.getElementById('pw-input').focus();
+  }
+}
+
+document.getElementById('pw-input').addEventListener('keydown', e => { if (e.key === 'Enter') checkPassword(); });
+
+// Check session
+if (sessionStorage.getItem('rbn_auth') === 'true') {
+  document.getElementById('password-gate').classList.add('hidden');
+  document.getElementById('dashboard').classList.add('visible');
+  document.addEventListener('DOMContentLoaded', initCharts);
+} else {
+  document.addEventListener('DOMContentLoaded', () => document.getElementById('pw-input').focus());
+}
+
+// ===== NAV ACTIVE STATE =====
+const navLinks = document.querySelectorAll('nav .nav-links a');
+window.addEventListener('scroll', () => {
+  let current = '';
+  document.querySelectorAll('.section').forEach(s => {
+    if (window.scrollY >= s.offsetTop - 120) current = s.id;
+  });
+  navLinks.forEach(a => {
+    a.classList.toggle('active', a.getAttribute('href') === '#' + current);
+  });
+});
+
+// ===== CHART DEFAULTS =====
+function initCharts() {
+
+Chart.defaults.font.family = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+Chart.defaults.font.size = 12;
+Chart.defaults.color = '#6B7A94';
+Chart.defaults.plugins.legend.display = false;
+
+const navy = '#1B2A4A';
+const navyLight = '#2E5090';
+const accent = '#FF6B35';
+const accentLight = '#FF8F66';
+const teal = '#10B981';
+const lightBlue = '#7EB5D6';
+const red = '#EF4444';
+
+const quartersAll = ['Q4\'19','Q3\'20','Q4\'20','Q1\'21','Q2\'21','Q3\'21','Q4\'21','Q1\'22','Q2\'22','Q3\'22','Q4\'22','Q1\'23','Q2\'23','Q3\'23','Q4\'23','Q1\'24','Q2\'24','Q3\'24','Q4\'24','Q1\'25','Q2\'25','Q3\'25','Q4\'25'];
+const revAll = [19500,8700,2615,21898,96226,103761,137505,323893,314012,237561,216590,482167,793263,862543,366760,175387,532703,395037,307211,172811,302479,321202,149342];
+const txnAll = [1300000,652000,871500,1765000,9382000,8361200,10663000,24576895,22465867,17829000,16680000,37109684,57048578,68375686,28734415,13635340,39042371,31692890,23873694,12520900,23558449,27628251,12658000];
+const closingsAll = [1,2,2,3,4,15,14,29,34,20,21,35,62,81,32,17,43,29,24,13,26,20,10];
+
+const rbnQ = ['Q4\'23','Q1\'24','Q2\'24','Q3\'24','Q4\'24','Q1\'25','Q2\'25','Q3\'25','Q4\'25'];
+const rbnRev = [6875,15048,149836,332488,307211,172811,302479,321202,149342];
+const rbnMkt = [0,0,2925,21907,20083,80818,71094,71359,76208];
+const rbnClose = [1,3,15,25,24,13,26,20,10];
+const rbnConn = [0,0,0,5,10,47,22,36,20];
+
+const months25 = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov'];
+const plRev = [24073,5640,18522,44118,33368,53114,32029,21512,58759,22590,20941];
+const plExp = [154226,106002,101828,116198,88858,91620,152945,104326,97194,240613,90740];
+const plNet = [-126776,-97044,-79520,-68431,-51799,-35203,-117453,-79350,-35161,-215009,-67254];
+
+const projQ = ['Q1\'26','Q2\'26','Q3\'26','Q4\'26','Q1\'27','Q2\'27','Q3\'27','Q4\'27','Q1\'28','Q2\'28','Q3\'28','Q4\'28'];
+const projRev = [241412,239467,250705,300016,452456,850806,1554572,2423913,3161781,3549311,3736117,3932754];
+const projClose = [20,19,20,24,37,69,126,196,256,287,303,318];
+const projLTVCAC = [3.22,3.19,3.34,2.00,1.51,1.70,2.07,3.23,4.22,4.73,4.98,5.24];
+const projCash = [157471,-62707,9720861,9424866,9006585,8495677,7941407,7646171,7563070,7571943,7602161,7652910];
+
+const tooltipMoney = { callbacks: { label: ctx => '$' + ctx.parsed.y.toLocaleString() }};
+const tooltipPct = { callbacks: { label: ctx => (ctx.parsed.y * 100).toFixed(2) + '%' }};
+
+// CHART: Revenue All
+new Chart(document.getElementById('chartRevAll'), {
+  type: 'bar',
+  data: { labels: quartersAll, datasets: [{ data: revAll, backgroundColor: navy, borderRadius: 3 }] },
+  options: { responsive: true, plugins: { tooltip: tooltipMoney }, scales: { y: { ticks: { callback: v => '$' + (v/1000) + 'K' }}}}
+});
+
+// CHART: Revenue RBN
+new Chart(document.getElementById('chartRevRBN'), {
+  type: 'bar',
+  data: { labels: rbnQ, datasets: [{ data: rbnRev, backgroundColor: navyLight, borderRadius: 3 }] },
+  options: { responsive: true, plugins: { tooltip: tooltipMoney }, scales: { y: { ticks: { callback: v => '$' + (v/1000) + 'K' }}}}
+});
+
+// CHART: Txn Quarterly
+new Chart(document.getElementById('chartTxnQ'), {
+  type: 'bar',
+  data: { labels: quartersAll, datasets: [{ data: txnAll, backgroundColor: navyLight, borderRadius: 3 }] },
+  options: { responsive: true, plugins: { tooltip: tooltipMoney }, scales: { y: { ticks: { callback: v => '$' + (v/1000000).toFixed(0) + 'M' }}}}
+});
+
+// CHART: Txn Cumulative
+const cumTxn = []; let runTxn = 0;
+txnAll.forEach(v => { runTxn += v; cumTxn.push(runTxn); });
+new Chart(document.getElementById('chartTxnCum'), {
+  type: 'line',
+  data: { labels: quartersAll, datasets: [{ data: cumTxn, borderColor: navy, backgroundColor: 'rgba(27,42,74,0.1)', fill: true, tension: 0.3, pointRadius: 2 }] },
+  options: { responsive: true, plugins: { tooltip: tooltipMoney }, scales: { y: { ticks: { callback: v => '$' + (v/1000000).toFixed(0) + 'M' }}}}
+});
+
+// CHART: Closings Quarterly
+new Chart(document.getElementById('chartClosingsQ'), {
+  type: 'bar',
+  data: { labels: quartersAll, datasets: [{ data: closingsAll, backgroundColor: navyLight, borderRadius: 3 }] },
+  options: { responsive: true }
+});
+
+// CHART: Closings Cumulative
+const cumClose = []; let runClose = 0;
+closingsAll.forEach(v => { runClose += v; cumClose.push(runClose); });
+new Chart(document.getElementById('chartClosingsCum'), {
+  type: 'line',
+  data: { labels: quartersAll, datasets: [{ data: cumClose, borderColor: navy, backgroundColor: 'rgba(27,42,74,0.1)', fill: true, tension: 0.3, pointRadius: 3, borderWidth: 2.5 }] },
+  options: { responsive: true }
+});
+
+// CHART: RBN Rev vs Mkt
+new Chart(document.getElementById('chartRBNRevMkt'), {
+  type: 'bar',
+  data: { labels: rbnQ, datasets: [
+    { label: 'Revenue', data: rbnRev, backgroundColor: navyLight, borderRadius: 3 },
+    { label: 'Mkt Spend', data: rbnMkt, backgroundColor: accent, borderRadius: 3 }
+  ]},
+  options: { responsive: true, plugins: { legend: { display: true, position: 'bottom' }, tooltip: tooltipMoney }, scales: { y: { ticks: { callback: v => '$' + (v/1000) + 'K' }}}}
+});
+
+// CHART: RBN Closings & Connections
+new Chart(document.getElementById('chartRBNCloseConn'), {
+  type: 'bar',
+  data: { labels: rbnQ, datasets: [
+    { label: 'Closings', data: rbnClose, backgroundColor: navy, borderRadius: 3 },
+    { label: 'Connections', data: rbnConn, backgroundColor: lightBlue, borderRadius: 3 }
+  ]},
+  options: { responsive: true, plugins: { legend: { display: true, position: 'bottom' }}}
+});
+
+// CHART: Take Rate
+const takeRates = [1.50,1.33,0.30,1.24,1.03,1.24,1.29,1.32,1.40,1.33,1.30,1.30,1.39,1.26,1.28,1.30,1.38,1.27,1.29,1.38,1.28,1.16,1.18];
+new Chart(document.getElementById('chartTakeRate'), {
+  type: 'line',
+  data: { labels: quartersAll, datasets: [{ data: takeRates, borderColor: navyLight, backgroundColor: 'rgba(46,80,144,0.1)', fill: true, tension: 0.3, pointRadius: 3 }] },
+  options: { responsive: true, scales: { y: { min: 0, max: 2, ticks: { callback: v => v.toFixed(1) + '%' }}}, plugins: { tooltip: { callbacks: { label: ctx => ctx.parsed.y.toFixed(2) + '%' }}}}
+});
+
+// CHART: Revenue per Closing
+const revPerClose = [];
+for (let i = 0; i < revAll.length; i++) { revPerClose.push(closingsAll[i] > 0 ? Math.round(revAll[i] / closingsAll[i]) : 0); }
+new Chart(document.getElementById('chartRevPerClose'), {
+  type: 'line',
+  data: { labels: quartersAll, datasets: [{ data: revPerClose, borderColor: teal, tension: 0.3, pointRadius: 3, borderWidth: 2.5 }] },
+  options: { responsive: true, plugins: { tooltip: tooltipMoney }, scales: { y: { ticks: { callback: v => '$' + v.toLocaleString() }}}}
+});
+
+// CHART: Annual Revenue
+new Chart(document.getElementById('chartAnnualRev'), {
+  type: 'bar',
+  data: { labels: ['2020','2021','2022','2023','2024','2025'], datasets: [{ data: [11315,359390,1092056,2504733,1410338,945834], backgroundColor: navy, borderRadius: 4 }] },
+  options: { responsive: true, plugins: { tooltip: tooltipMoney }, scales: { y: { ticks: { callback: v => '$' + (v/1000000).toFixed(1) + 'M' }}}}
+});
+
+// CHART: Annual Txn
+new Chart(document.getElementById('chartAnnualTxn'), {
+  type: 'bar',
+  data: { labels: ['2020','2021','2022','2023','2024','2025'], datasets: [{ data: [1523500,30171200,81550762,191268363,108244295,76365600], backgroundColor: navyLight, borderRadius: 4 }] },
+  options: { responsive: true, plugins: { tooltip: tooltipMoney }, scales: { y: { ticks: { callback: v => '$' + (v/1000000).toFixed(0) + 'M' }}}}
+});
+
+// CHART: P&L Monthly Rev vs Exp
+new Chart(document.getElementById('chartPLMonthly'), {
+  type: 'bar',
+  data: { labels: months25, datasets: [
+    { label: 'Revenue', data: plRev, backgroundColor: navyLight, borderRadius: 3 },
+    { label: 'Expenses', data: plExp, backgroundColor: accent, borderRadius: 3 }
+  ]},
+  options: { responsive: true, plugins: { legend: { display: true, position: 'bottom' }, tooltip: tooltipMoney }, scales: { y: { ticks: { callback: v => '$' + (v/1000) + 'K' }}}}
+});
+
+// CHART: Net Income
+new Chart(document.getElementById('chartNetIncome'), {
+  type: 'line',
+  data: { labels: months25, datasets: [{ data: plNet, borderColor: red, backgroundColor: 'rgba(239,68,68,0.1)', fill: true, tension: 0.3, pointRadius: 4, borderWidth: 2.5 }] },
+  options: { responsive: true, plugins: { tooltip: tooltipMoney }, scales: { y: { ticks: { callback: v => '$' + (v/1000).toFixed(0) + 'K' }}}}
+});
+
+// CHART: Expense Pie
+new Chart(document.getElementById('chartExpPie'), {
+  type: 'doughnut',
+  data: {
+    labels: ['Advertising', 'Payroll', 'Subcontractors', 'IT & Software', 'Dues/Subs', 'Utilities', 'Other'],
+    datasets: [{ data: [505938, 616500, 111946, 32522, 56179, 25084, 14029],
+      backgroundColor: [accent, navy, navyLight, teal, lightBlue, '#F59E0B', '#94A3B8'], borderWidth: 0 }]
+  },
+  options: { responsive: true, plugins: { legend: { display: true, position: 'right' }}}
+});
+
+// CHART: CPC
+const cpcQ = ['Q3\'24','Q4\'24','Q1\'25','Q2\'25','Q3\'25','Q4\'25'];
+const cpcV = [4381,2008,1720,3232,1982,3810];
+new Chart(document.getElementById('chartCPC'), {
+  type: 'line',
+  data: { labels: cpcQ, datasets: [{ data: cpcV, borderColor: accent, tension: 0.3, pointRadius: 5, borderWidth: 2.5, pointBackgroundColor: accent }] },
+  options: { responsive: true, plugins: { tooltip: tooltipMoney }, scales: { y: { ticks: { callback: v => '$' + v.toLocaleString() }}}}
+});
+
+// CHART: Mkt ROI
+const mktQ = ['Q2\'24','Q3\'24','Q4\'24','Q1\'25','Q2\'25','Q3\'25','Q4\'25'];
+const mktSpend = [2925,21907,20083,80818,71094,71359,76208];
+const mktRevArr = [149836,332488,307211,172811,302479,321202,149342];
+new Chart(document.getElementById('chartMktROI'), {
+  type: 'bar',
+  data: { labels: mktQ, datasets: [
+    { label: 'Revenue', data: mktRevArr, backgroundColor: navyLight, borderRadius: 3 },
+    { label: 'Mkt Spend', data: mktSpend, backgroundColor: accent, borderRadius: 3 }
+  ]},
+  options: { responsive: true, plugins: { legend: { display: true, position: 'bottom' }, tooltip: tooltipMoney }, scales: { y: { ticks: { callback: v => '$' + (v/1000) + 'K' }}}}
+});
+
+// CHART: Projected Revenue
+new Chart(document.getElementById('chartProjRev'), {
+  type: 'bar',
+  data: { labels: projQ, datasets: [{ data: projRev, backgroundColor: ctx => ctx.dataIndex < 3 ? '#94A3B8' : navyLight, borderRadius: 3 }] },
+  options: { responsive: true, plugins: { tooltip: tooltipMoney }, scales: { y: { ticks: { callback: v => '$' + (v/1000000).toFixed(1) + 'M' }}}}
+});
+
+// CHART: Projected Closings
+new Chart(document.getElementById('chartProjClosings'), {
+  type: 'bar',
+  data: { labels: projQ, datasets: [{ data: projClose, backgroundColor: ctx => ctx.dataIndex < 3 ? '#94A3B8' : navy, borderRadius: 3 }] },
+  options: { responsive: true }
+});
+
+// CHART: LTV/CAC
+new Chart(document.getElementById('chartLTVCAC'), {
+  type: 'line',
+  data: { labels: projQ, datasets: [
+    { label: 'LTV/CAC', data: projLTVCAC, borderColor: teal, tension: 0.3, pointRadius: 4, borderWidth: 2.5, pointBackgroundColor: teal },
+    { label: '3x Target', data: Array(12).fill(3), borderColor: '#D1D5DB', borderDash: [6,4], pointRadius: 0, borderWidth: 1.5 }
+  ]},
+  options: { responsive: true, plugins: { legend: { display: true, position: 'bottom' }, tooltip: { callbacks: { label: ctx => ctx.parsed.y.toFixed(1) + 'x' }}}, scales: { y: { ticks: { callback: v => v + 'x' }}}}
+});
+
+// CHART: Cash Position
+new Chart(document.getElementById('chartCash'), {
+  type: 'line',
+  data: { labels: projQ, datasets: [{ data: projCash, borderColor: navy, backgroundColor: 'rgba(27,42,74,0.08)', fill: true, tension: 0.3, pointRadius: 4, borderWidth: 2.5 }] },
+  options: { responsive: true, plugins: { tooltip: tooltipMoney }, scales: { y: { ticks: { callback: v => '$' + (v/1000000).toFixed(1) + 'M' }}}}
+});
+
+} // end initCharts
+</script>
+</body>
+</html>
