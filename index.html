@@ -214,6 +214,7 @@ footer {
   <div class="logo">RBN <span>Financial Metrics</span></div>
   <div class="nav-links">
     <a href="#kpis">KPIs</a>
+    <a href="#comparison">Comparison</a>
     <a href="#revenue">Revenue</a>
     <a href="#transactions">Transactions</a>
     <a href="#closings">Closings</a>
@@ -222,7 +223,6 @@ footer {
     <a href="#annual">Annual</a>
     <a href="#pl">P&L</a>
     <a href="#marketing">Marketing</a>
-    <a href="#comparison">Comparison</a>
     <a href="#projections">Projections</a>
   </div>
 </nav>
@@ -258,6 +258,44 @@ footer {
     <div class="kpi-card"><div class="label">RBN Rev / Closing</div><div class="value">$12,827</div><div class="sub">Higher than legacy program</div></div>
     <div class="kpi-card"><div class="label">Operating Account</div><div class="value">$255K</div><div class="sub">Operating cash on hand</div></div>
     <div class="kpi-card"><div class="label">Rewards Trust Account</div><div class="value">$595K</div><div class="sub">Held for reward point obligations</div></div>
+  </div>
+</div>
+
+<!-- ==================== COMPARISON ==================== -->
+<div class="section" id="comparison">
+  <div class="section-header">
+    <h2>Program Comparison — First 9 Quarters</h2>
+    <span class="badge">Amex vs RBN</span>
+  </div>
+  <div class="callout">
+    <strong>Apples-to-apples:</strong> Comparing each program at the same stage of maturity. Amex MR Points counted from Q3 2020 (excluding the Q4 2019 launch outlier). RBN Rewards counted from Q4 2023 launch.
+  </div>
+  <div class="chart-row">
+    <div class="chart-card">
+      <h3>Quarterly Transaction Value — First 9 Quarters</h3>
+      <div class="chart-sub">RBN Rewards ramped faster in transaction volume at the same stage</div>
+      <div class="chart-container"><canvas id="chartFirst9Txn"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <h3>Cumulative Transaction Value — First 9 Quarters</h3>
+      <div class="chart-sub">Running total comparison at the same point in each program's life</div>
+      <div class="chart-container"><canvas id="chartFirst9CumTxn"></canvas></div>
+    </div>
+  </div>
+  <div class="chart-card" style="overflow-x:auto;">
+    <h3>Amex MR Points vs RBN Rewards — Side by Side</h3>
+    <div class="chart-sub">RBN Rewards delivers higher per-closing revenue on a platform RBN fully owns</div>
+    <table class="data-table comparison-table">
+      <thead><tr><th>Metric</th><th class="program">Amex MR Points<br><small>Q4 2019 – Q3 2024</small></th><th class="program">RBN Rewards<br><small>Q4 2023 – Q4 2025</small></th><th class="program">Combined</th></tr></thead>
+      <tbody>
+        <tr><td>Total Transaction Value</td><td class="num">$350,257,336</td><td class="num">$140,167,384</td><td class="num">$490,424,720</td></tr>
+        <tr><td>Total Revenue</td><td class="num">$4,585,874</td><td class="num">$1,757,292</td><td class="num">$6,343,166</td></tr>
+        <tr><td>Total Closings</td><td class="num">400</td><td class="num">137</td><td class="num">537</td></tr>
+        <tr><td>Avg Take Rate</td><td class="num">1.31%</td><td class="num">1.25%</td><td class="num">1.29%</td></tr>
+        <tr><td>Avg Revenue / Closing</td><td class="num">$11,465</td><td class="num highlight">$12,827</td><td class="num">$11,812</td></tr>
+        <tr><td>Program Duration</td><td class="num">~5 years</td><td class="num">~2 years</td><td class="num">~6 years</td></tr>
+      </tbody>
+    </table>
   </div>
 </div>
 
@@ -501,34 +539,6 @@ footer {
       <div class="chart-sub">Revenue generated significantly exceeds marketing investment</div>
       <div class="chart-container"><canvas id="chartMktROI"></canvas></div>
     </div>
-  </div>
-</div>
-
-<!-- ==================== COMPARISON ==================== -->
-<div class="section" id="comparison">
-  <div class="section-header">
-    <h2>Program Comparison</h2>
-    <span class="badge">Amex vs RBN</span>
-  </div>
-  <div class="chart-card">
-    <h3>First 9 Quarters: Transaction Value Comparison</h3>
-    <div class="chart-sub">Amex MR Points (from Q3 2020) vs RBN Rewards (from Q4 2023) — same stage of program maturity</div>
-    <div class="chart-container"><canvas id="chartFirst9Txn"></canvas></div>
-  </div>
-  <div class="chart-card" style="overflow-x:auto;">
-    <h3>Amex MR Points vs RBN Rewards — Side by Side</h3>
-    <div class="chart-sub">RBN Rewards delivers higher per-closing revenue on a platform RBN fully owns</div>
-    <table class="data-table comparison-table">
-      <thead><tr><th>Metric</th><th class="program">Amex MR Points<br><small>Q4 2019 – Q3 2024</small></th><th class="program">RBN Rewards<br><small>Q4 2023 – Q4 2025</small></th><th class="program">Combined</th></tr></thead>
-      <tbody>
-        <tr><td>Total Transaction Value</td><td class="num">$350,257,336</td><td class="num">$140,167,384</td><td class="num">$490,424,720</td></tr>
-        <tr><td>Total Revenue</td><td class="num">$4,585,874</td><td class="num">$1,757,292</td><td class="num">$6,343,166</td></tr>
-        <tr><td>Total Closings</td><td class="num">400</td><td class="num">137</td><td class="num">537</td></tr>
-        <tr><td>Avg Take Rate</td><td class="num">1.31%</td><td class="num">1.25%</td><td class="num">1.29%</td></tr>
-        <tr><td>Avg Revenue / Closing</td><td class="num">$11,465</td><td class="num highlight">$12,827</td><td class="num">$11,812</td></tr>
-        <tr><td>Program Duration</td><td class="num">~5 years</td><td class="num">~2 years</td><td class="num">~6 years</td></tr>
-      </tbody>
-    </table>
   </div>
 </div>
 
@@ -892,6 +902,20 @@ new Chart(document.getElementById('chartFirst9Txn'), {
   data: { labels: first9Labels, datasets: [
     { label: 'Amex MR Points (from Q3 2020)', data: amexFirst9Txn, backgroundColor: '#94A3B8', borderRadius: 3 },
     { label: 'RBN Rewards (from Q4 2023)', data: rbnFirst9Txn, backgroundColor: navyLight, borderRadius: 3 }
+  ]},
+  options: { responsive: true, plugins: { legend: { display: true, position: 'bottom' }, tooltip: tooltipMoney }, scales: { y: { ticks: { callback: v => '$' + (v/1000000).toFixed(0) + 'M' }}}}
+});
+
+// CHART: First 9 Quarters CUMULATIVE Txn Value Comparison
+const amexCum9 = []; let aRun = 0;
+amexFirst9Txn.forEach(v => { aRun += v; amexCum9.push(aRun); });
+const rbnCum9 = []; let rRun = 0;
+rbnFirst9Txn.forEach(v => { rRun += v; rbnCum9.push(rRun); });
+new Chart(document.getElementById('chartFirst9CumTxn'), {
+  type: 'line',
+  data: { labels: first9Labels, datasets: [
+    { label: 'Amex MR Points (from Q3 2020)', data: amexCum9, borderColor: '#94A3B8', backgroundColor: 'rgba(148,163,184,0.1)', fill: true, tension: 0.3, pointRadius: 4, borderWidth: 2.5 },
+    { label: 'RBN Rewards (from Q4 2023)', data: rbnCum9, borderColor: navyLight, backgroundColor: 'rgba(46,80,144,0.1)', fill: true, tension: 0.3, pointRadius: 4, borderWidth: 2.5 }
   ]},
   options: { responsive: true, plugins: { legend: { display: true, position: 'bottom' }, tooltip: tooltipMoney }, scales: { y: { ticks: { callback: v => '$' + (v/1000000).toFixed(0) + 'M' }}}}
 });
